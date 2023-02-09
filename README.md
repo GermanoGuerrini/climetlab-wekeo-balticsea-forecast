@@ -41,7 +41,7 @@ The climetlab python package allows easy access to the data with a few lines of 
 
 !pip install climetlab climetlab-wekeo-balticsea-forecast
 import climetlab as cml
-ds = cml.load_dataset("wekeo-balticsea-forecast", date="20201231")
+ds = cml.load_dataset("wekeo-balticsea-forecast", area=[60, 16, 55, 22], start="20201002", end="20201003", variable="depth")
 ds.to_xarray()
 ```
 
