@@ -31,11 +31,15 @@ class Main(Dataset):
 
     dataset = None
 
+    default_options = {
+        "xarray_open_mfdataset_kwargs": {"chunks": "auto", "engine": "netcdf4"}
+    }
+
     @normalize("area", "bounding-box(list)")
     @normalize("start", "date(%Y-%m-%dT%H:%M:%SZ)")
     @normalize("end", "date(%Y-%m-%dT%H:%M:%SZ)")
     @normalize("variable", type=str, multiple=True)
-    def __init__(self, area, start, end, variable):
+    def __init__(self, area, start, end):
         query = {
             "datasetId": "EO:MO:DAT:BALTICSEA_ANALYSISFORECAST_BGC_003_007:cmems_mod_bal_bgc-pp_anfc_P1D-i_202211",
             "boundingBoxValues": [
@@ -52,7 +56,26 @@ class Main(Dataset):
             "dateRangeSelectValues": [
                 {"name": "time", "start": f"{start}", "end": f"{end}"}
             ],
-            "multiStringSelectValues": [{"name": "variables", "value": variable}],
         }
 
         self.source = cml.load_source("wekeo", query)
+        self._xarray = None
+
+    def _to_xarray(self, **kwargs):
+        assert len(self) > 0
+
+        options = {}
+        options.update(self.default_options)
+        options.update(kwargs)
+
+        if len(self) > 1:
+            # In this case self.source is a MultiSource instance
+            return [s.to_xarray(**options) for s in self.source.sources]
+
+        return self.source._reader.to_xarray(**options)
+
+    def to_xarray(self, **kwargs):
+        if self._xarray is None:
+            self._xarray = self._to_xarray(**kwargs)
+
+        return self._xarray
